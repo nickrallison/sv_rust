@@ -1,0 +1,134 @@
+WHITESPACE = _{ " " | NEWLINE | "\t" }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!"\n" ~ ANY)*) }
+cname = @{ (ASCII_ALPHANUMERIC | "_")+ }
+
+module_kw = { "module" }
+endmodule = { "endmodule" }
+input = { "input" }
+output = { "output" }
+
+reg = { "reg" }
+wire = { "wire" }
+logic = { "logic" }
+parameter = { "parameter" }
+localparam = { "localparam" }
+genvar = { "genvar" }
+integer_kw = { "integer" }
+
+always = { "always" }
+always_comb = { "always_comb" }
+always_ff = { "always_ff" }
+always_latch = { "always_latch" }
+assign = { "assign" }
+
+case = { "case" }
+endcase = { "endcase" }
+
+if_kw = { "if" }
+else_kw = { "else" }
+
+begin = { "begin" }
+end = { "end" }
+
+posedge = { "posedge" }
+negedge = { "negedge" }
+
+for_kw = { "for" }
+while_kw = { "while" }
+
+generate = { "generate" }
+endgenerate = { "endgenerate" }
+
+identifier = @{ (ASCII_ALPHANUMERIC | "_")+ }
+
+string = { "\"" ~ inner ~ "\"" }
+inner = { char* }
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
+net = {integer? ~ apos ~ ("b" | "B" | "o" | "O" | "d" | "D" | "h" | "H") ~ (ASCII_DIGIT | "x" | "X" | "z" | "Z" | "_" )+}
+number = {
+             "-"?
+             ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
+             ~ ("." ~ ASCII_DIGIT*)?
+             ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+         }
+bus = {"[" ~ integer ~ ":" ~ integer ~ "]"}
+bus_select = {"[" ~ integer ~ "]"}
+
+// binary_operator = { "==" | "<=" | ">=" | "!=" | "+=" | "-=" | "*=" | "/=" | "&&" | "||" | "<<" | ">>" | "=" | "<" | ">" | "!" | "~" | "&" | "|" | "^" | "+" | "-" | "*" | "/" | "%" | "**" }
+// unary_operator = {"&" | "|" | "^" | "~|" | "~&"}
+
+left_paren = { "(" }
+right_paren = { ")" }
+left_bracket = { "[" }
+right_bracket = { "]" }
+left_brace = { "{" }
+right_brace = { "}" }
+colon = { ":" }
+semicolon = { ";" }
+comma = { "," }
+apos = { "'" }
+integer = { ASCII_DIGIT+ }
+
+
+// ############################
+
+value_p1 = { net | number }
+value_p2 = { value_p1 | identifier | ("(" ~ expression ~ ")") }
+value = { (value_p2 ~ bus) | (value_p2 ~ bus_select) | value_p2 }
+
+lognegation_expression = {"!" ~ (value | lognegation_expression)}
+bitnegation_expression = {"~" ~ (value | lognegation_expression | bitnegation_expression)}
+reduceand_expression = {"&" ~ (value | lognegation_expression | bitnegation_expression)}
+reduceor_expression = {"|" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression)}
+reducenand_expression = {"~&" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression)}
+reducenor_expression = {"~|" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression)}
+reducexor_expression = {"^" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression | reducenor_expression)}
+reducexnor_expression = {("~^" | "^~") ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression | reducenor_expression | reducexor_expression)}
+unary_plus_expression = {"+" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression | reducenor_expression | reducexor_expression | reducexnor_expression)}
+unary_minus_expression = {"-" ~ (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression | reducenor_expression | reducexor_expression | reducexnor_expression | unary_plus_expression)}
+unary_expression = { (value | lognegation_expression | bitnegation_expression | reduceand_expression | reduceor_expression | reducenand_expression | reducenor_expression | reducexor_expression | reducexnor_expression | unary_plus_expression | unary_minus_expression) }
+
+mult_expression = {value ~ ("*" ~ value)+}
+divide_expression = {(value | mult_expression) ~ ("/" ~ (value | mult_expression))+}
+modulus_expression = {(value | mult_expression | divide_expression) ~ ("%" ~ (value | mult_expression | divide_expression))+}
+plus_expression = {(value | mult_expression | divide_expression | modulus_expression) ~ ("+" ~ (value | mult_expression | divide_expression | modulus_expression))+}
+minus_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression) ~ ("-" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression))+}
+shift_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression) ~ (("<<" | ">>") ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression))+}
+bitand_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression) ~ ("&" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression))+}
+bitxor_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression) ~ ("^" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression))+}
+bitxnor_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression) ~ ("~^" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression))+}
+bitor_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression) ~ ("|" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression))+}
+logicand_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression | bitor_expression) ~ ("&&" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression | bitor_expression))+}
+logicor_expression = {(value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression | bitor_expression | logicand_expression) ~ ("||" ~ (value | mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression | bitor_expression | logicand_expression))+}
+binary_expression = { (mult_expression | divide_expression | modulus_expression | plus_expression | minus_expression | shift_expression | bitand_expression | bitxor_expression | bitxnor_expression | bitor_expression | logicand_expression | logicor_expression) }
+
+combine_expression = {("{" ~ (value | unary_expression | binary_expression) ~ ("," ~ (value | unary_expression | binary_expression))* ~ "}") | ("{" ~ (value | unary_expression | binary_expression) ~ "}")}
+
+expression = {value | unary_expression | binary_expression | combine_expression}
+
+assignment = {assign ~ identifier ~ "=" ~ expression ~ ";"}
+
+equality_statement = {identifier ~ "=" ~ expression ~ ";"}
+case_statement = {case ~ "(" ~ expression ~ ")" ~ ((expression | "default") ~ ":" ~ statement)*  ~ endcase}
+statement = {equality_statement | case_statement}
+
+begin_end_block = {begin ~ statement* ~ end}
+
+input_ports = {input ~ ((reg | logic | wire)? ~ bus? ~ (identifier ~ ","?)+)+}
+output_ports = {output ~ ((reg | logic | wire)? ~ bus? ~ (identifier ~ ","?)+)+}
+module_def = {module_kw ~ identifier ~ "(" ~ (input_ports | output_ports)* ~ ")" ~ ";" ~ (statement | assignment)* ~ endmodule}
+
+module_io = {"." ~ identifier ~ "(" ~ identifier ~ "),?"}
+module_init = {module_kw ~ ("#(" ~ module_io+ ~ ")")? ~ identifier ~ "(" ~ module_io* ~ ")" ~ ";"}
+
+file = { SOI ~ module_def* ~ EOI}
+
+// value = {(unary_operator)
+//  | ()}
+
+test = {case ~ "(" ~ expression ~ ")" ~ ((expression | "default") ~ ":" ~ statement)}
