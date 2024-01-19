@@ -203,7 +203,7 @@ fn string_to_rule(rule: &str) -> Rule {
     }
 }
 
-fn test_file<'i>(rule: String, input: String) -> bool {
+fn test_file(rule: String, input: String) -> bool {
     let rule = string_to_rule(&rule);
     let input = input.as_str();
     let parse = SVParser::parse(rule, input);
