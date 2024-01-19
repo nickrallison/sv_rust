@@ -1,0 +1,5 @@
+Test: 2
+Rule: assign_statement
+Input:
+
+    assign parity_out = ^data_in;
