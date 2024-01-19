@@ -2,84 +2,83 @@ WHITESPACE = _{ " " | NEWLINE | "\t" }
 COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!"\n" ~ ANY)*) }
 cname = @{ (ASCII_ALPHANUMERIC | "_")+ }
 
-module_kw = { "module" }
-endmodule = { "endmodule" }
-input = { "input" }
-output = { "output" }
+module_kw = _{ "module" }
+endmodule = _{ "endmodule" }
+input = _{ "input" }
+output = _{ "output" }
 
-reg = { "reg" }
-wire = { "wire" }
-logic = { "logic" }
-parameter = { "parameter" }
-localparam = { "localparam" }
-genvar = { "genvar" }
-integer_kw = { "integer" }
+reg = _{ "reg" }
+wire = _{ "wire" }
+logic = _{ "logic" }
+parameter = _{ "parameter" }
+localparam = _{ "localparam" }
+genvar = _{ "genvar" }
+integer_kw = _{ "integer" }
 
-always = { "always" }
-always_comb = { "always_comb" }
-always_ff = { "always_ff" }
-always_latch = { "always_latch" }
-assign = { "assign" }
+always = _{ "always" }
+always_comb = _{ "always_comb" }
+always_ff = _{ "always_ff" }
+always_latch = _{ "always_latch" }
+assign = _{ "assign" }
 
-case = { "case" }
-endcase = { "endcase" }
+case = _{ "case" }
+endcase = _{ "endcase" }
 
-if_kw = { "if" }
-else_kw = { "else" }
+if_kw = _{ "if" }
+else_kw = _{ "else" }
 
-begin = { "begin" }
-end = { "end" }
+begin = _{ "begin" }
+end = _{ "end" }
 
-posedge = { "posedge" }
-negedge = { "negedge" }
+posedge = _{ "posedge" }
+negedge = _{ "negedge" }
 
-for_kw = { "for" }
-while_kw = { "while" }
+for_kw = _{ "for" }
+while_kw = _{ "while" }
 
-generate = { "generate" }
-endgenerate = { "endgenerate" }
+generate = _{ "generate" }
+endgenerate = _{ "endgenerate" }
 
 identifier = @{ (ASCII_ALPHANUMERIC | "_")+ }
 
-string = { "\"" ~ inner ~ "\"" }
-inner = { char* }
-char = {
+string = _{ "\"" ~ inner ~ "\"" }
+inner = _{ char* }
+char = _        {
     !("\"" | "\\") ~ ANY
     | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
     | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
 
-net = {integer? ~ apos ~ ("b" | "B" | "o" | "O" | "d" | "D" | "h" | "H") ~ (ASCII_DIGIT | "x" | "X" | "z" | "Z" | "_" )+}
-number = {
+net = _     {integer? ~ apos ~ ("b" | "B" | "o" | "O" | "d" | "D" | "h" | "H") ~ (ASCII_DIGIT | "x" | "X" | "z" | "Z" | "_" )+}
+number = _      {
              "-"?
              ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
              ~ ("." ~ ASCII_DIGIT*)?
              ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
          }
-bus = {"[" ~ integer ~ ":" ~ integer ~ "]"}
-bus_select = {"[" ~ integer ~ "]"}
+bus = _     {"[" ~ integer ~ ":" ~ integer ~ "]"}
+bus_select = _      {"[" ~ integer ~ "]"}
 
-// binary_operator = { "==" | "<=" | ">=" | "!=" | "+=" | "-=" | "*=" | "/=" | "&&" | "||" | "<<" | ">>" | "=" | "<" | ">" | "!" | "~" | "&" | "|" | "^" | "+" | "-" | "*" | "/" | "%" | "**" }
-// unary_operator = {"&" | "|" | "^" | "~|" | "~&"}
-
-left_paren = { "(" }
-right_paren = { ")" }
-left_bracket = { "[" }
-right_bracket = { "]" }
-left_brace = { "{" }
-right_brace = { "}" }
-colon = { ":" }
-semicolon = { ";" }
-comma = { "," }
-apos = { "'" }
-integer = { ASCII_DIGIT+ }
+left_paren = _      { "(" }
+right_paren = _     { ")" }
+left_bracket = _        { "[" }
+right_bracket = _       { "]" }
+left_brace = _      { "{" }
+right_brace = _     { "}" }
+colon = _       { ":" }
+semicolon = _       { ";" }
+comma = _       { "," }
+apos = _        { "'" }
+integer = _     { ASCII_DIGIT+ }
 
 
 // ############################
 
-value_p1 = { net | number }
-value_p2 = { value_p1 | identifier | ("(" ~ expression ~ ")") }
-value = { (value_p2 ~ bus) | (value_p2 ~ bus_select) | value_p2 }
+value_p1 =         { net | number }
+value =         { value_p1 | identifier | ("(" ~ expression ~ ")") }
+
+
+bus_expression = {value ~ (("[" ~ value ~ ":" ~ value ~ "]") | ("[" ~ value ~ "]"))}
 
 lognegation_expression = {"!" ~ (value | lognegation_expression)}
 bitnegation_expression = {"~" ~ (value | lognegation_expression | bitnegation_expression)}
@@ -109,9 +108,9 @@ binary_expression = { (mult_expression | divide_expression | modulus_expression 
 
 combine_expression = {("{" ~ (value | unary_expression | binary_expression) ~ ("," ~ (value | unary_expression | binary_expression))* ~ "}") | ("{" ~ (value | unary_expression | binary_expression) ~ "}")}
 
-expression = {value | unary_expression | binary_expression | combine_expression}
+expression = { binary_expression | unary_expression | combine_expression | bus_expression | value }
 
-assignment = {assign ~ identifier ~ "=" ~ expression ~ ";"}
+assignment = {assign ~ equality_statement}
 
 equality_statement = {identifier ~ "=" ~ expression ~ ";"}
 case_statement = {case ~ "(" ~ expression ~ ")" ~ ((expression | "default") ~ ":" ~ statement)*  ~ endcase}

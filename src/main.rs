@@ -1,5 +1,7 @@
 mod test;
+mod module_serde;
 
+use std::fs;
 use pest::consumes_to;
 use pest::{Parser, parses_to};
 use pest_derive::Parser;
@@ -8,24 +10,27 @@ use pest_derive::Parser;
 #[grammar = "sv.pest"]
 pub struct SVParser;
 
+
+
 fn main() {
 
-    let input: &str = "module parity_using_bitwise (
-    input   wire [7:0] data_in    , //  8 bit data in
-    output  wire       parity_out   //  1 bit parity out
-    );
-    //--------------Code Starts Here-----------------------
-    assign parity_out = ^data_in;
-
-endmodule";
-    let test_parse = SVParser::parse(Rule::module_def , input);
-
+    let test_str = "assign y = ~a & ~b & ~c | a & ~b & ~c | a & ~b & c;";
+    let test_parse = SVParser::parse(Rule::assignment , test_str);
     println!("{:?}", test_parse);
 
+    let files = fs::read_dir("examples").unwrap();
 
-    // match rule {
-    //     Some(r) => println!("{:?}", r),
-    //     None => panic!("Rule not found"),
-    // }
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        let file_name = path.to_str().unwrap();
+        let file: &str = &fs::read_to_string(file_name).expect("Unable to read file");
+        let file_parse = SVParser::parse(Rule::file , file);
 
+        if !file_parse.is_ok() {
+            println!("Parse failed for file: {}", file_name);
+            println!("{:?}", file_parse);
+            panic!();
+        }
+    }
 }

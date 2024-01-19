@@ -211,7 +211,7 @@ fn test_file(rule: String, input: String) -> bool {
 }
 
 #[rstest]
-fn for_each_file(#[files("examples/**/*.test")] path: PathBuf) {
+fn for_each_file(#[files("test/**/*.test")] path: PathBuf) {
     let file = fs::read_to_string(&path).expect("cannot read file");
     let re = regex::Regex::new(r"//\s*Test:\s+(\d+)\s+//\s*Rule:\s+(\w+)\s+//\s*Input:\s+([\s\S]+)$").unwrap();
     let captures = re.captures(&file).unwrap();
